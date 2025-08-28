@@ -18,7 +18,7 @@ const errorModal = document.getElementById('error-modal');
 const errorMessage = document.getElementById('error-message');
 const errorCloseBtn = document.getElementById('error-close-btn');
 // URL do seu backend no Deno Deploy - SUBSTITUA pela sua URL!
-const BACKEND_URL = 'https://seu-projeto.deno.dev';
+const BACKEND_URL = 'https://nekodrops-backend.deno.dev';
 
 // Estado da aplicação
 let user = null;
