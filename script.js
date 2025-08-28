@@ -127,6 +127,62 @@ function setupCopyButtons() {
     });
 }
 
+// Adicionar esta função para configurar os filtros
+function setupFilters() {
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const filter = btn.dataset.filter;
+            renderDrops(filter);
+        });
+    });
+}
+
+// Modificar a função renderDrops para aceitar filtro
+function renderDrops(filter = 'all') {
+    clearDrops();
+    
+    if (!user || userRoles.length === 0) {
+        showNoAccessMessage();
+        return;
+    }
+    
+    const canSeeVip = userRoles.includes(VIP_ROLE_ID) || userRoles.includes(OWNER_ROLE_ID);
+    const isOwner = userRoles.includes(OWNER_ROLE_ID);
+    
+    let filteredDrops = drops;
+    
+    if (filter === 'normal') {
+        filteredDrops = drops.filter(drop => !drop.isVip);
+    } else if (filter === 'vip') {
+        filteredDrops = drops.filter(drop => drop.isVip);
+        if (!canSeeVip) {
+            filteredDrops = [];
+        }
+    }
+    
+    if (filteredDrops.length === 0) {
+        showNoDropsMessage();
+        return;
+    }
+    
+    filteredDrops.forEach(drop => {
+        const dropElement = createRobloxAccountElement(drop, isOwner);
+        dropsGrid.appendChild(dropElement);
+    });
+}
+
+// Não se esqueça de chamar setupFilters() no DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+    setupEventListeners();
+    setupFilters(); // ← Adicionar esta linha
+    setupCopyButtons();
+});
+
 // Função para copiar para a área de transferência
 function copyToClipboard(text, button) {
     navigator.clipboard.writeText(text).then(() => {
