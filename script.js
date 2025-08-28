@@ -1,5 +1,5 @@
 // Configurações
-const CLIENT_ID = "1410654667490197641"; // Substitua pelo Client ID do seu app Discord
+const CLIENT_ID = "1410654667490197641";
 const REDIRECT_URI = window.location.origin;
 const SERVER_ID = "1399661543284805763";
 const MEMBER_ROLE_ID = "1399662113114296360";
@@ -23,19 +23,26 @@ let user = null;
 let userRoles = [];
 let drops = [];
 
-// Dados de exemplo (substituir por dados reais em produção)
-const sampleDrops = [
+// Dados de exemplo de contas Roblox
+const sampleRobloxAccounts = [
     {
         id: 1,
         messageId: "123456789",
-        title: "Aces Roblox",
-        price: "R$ 5,00",
-        description: "Este produto é entregue automaticamente após o pagamento. Ideal para quem deseja praticidade e agilidade na sua compra.",
+        username: "Ethchacoc",
+        password: "Lok1_3008'",
+        ip: "91.173.167.33",
+        robux: "0",
+        premium: false,
+        cookie: "COOKIE_ROBLOX_AQUI",
+        age: "1109 Dias",
+        status: "Unverified (No Email Address)",
+        description: "Conta Roblox com 1109 dias de idade. Ideal para quem busca uma conta estabelecida.",
         features: [
-            "Contagem segura",
-            "Mobilidade em carteiras",
-            "Entrega automática",
-            "Garantia de funcionamento"
+            "Idade: 1109 Dias",
+            "Status: Não verificado",
+            "IP: 91.173.167.33",
+            "Robux: 0",
+            "Premium: Não"
         ],
         imageUrl: "https://via.placeholder.com/300x160/5865F2/FFFFFF?text=Roblox+Account",
         isVip: false,
@@ -44,34 +51,25 @@ const sampleDrops = [
     {
         id: 2,
         messageId: "987654321",
-        title: "Conta Roblox Premium",
-        price: "R$ 15,00",
-        description: "Conta Roblox com itens exclusivos e saldo Robux.",
+        username: "PremiumUser",
+        password: "PremiumPass123",
+        ip: "192.168.1.1",
+        robux: "2500",
+        premium: true,
+        cookie: "COOKIE_PREMIUM_AQUI",
+        age: "500 Dias",
+        status: "Verified",
+        description: "Conta Roblox Premium com 2500 Robux. Perfeita para jogadores experientes.",
         features: [
-            "500 Robux inclusos",
-            "Acesso a jogos premium",
-            "Avatar items exclusivos",
-            "Suporte prioritário"
+            "Idade: 500 Dias",
+            "Status: Verificado",
+            "Robux: 2500",
+            "Premium: Sim",
+            "Itens exclusivos"
         ],
         imageUrl: "https://via.placeholder.com/300x160/00C853/FFFFFF?text=Premium+Account",
         isVip: true,
         createdAt: "2023-11-14T15:45:00Z"
-    },
-    {
-        id: 3,
-        messageId: "567891234",
-        title: "Kit Iniciante Roblox",
-        price: "R$ 7,50",
-        description: "Perfeito para quem está começando no Roblox.",
-        features: [
-            "250 Robux",
-            "Itens básicos para avatar",
-            "Guia de iniciação",
-            "Suporte 24/7"
-        ],
-        imageUrl: "https://via.placeholder.com/300x160/23272A/FFFFFF?text=Starter+Kit",
-        isVip: false,
-        createdAt: "2023-11-13T09:15:00Z"
     }
 ];
 
@@ -79,6 +77,7 @@ const sampleDrops = [
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     setupEventListeners();
+    setupCopyButtons();
 });
 
 // Configurar event listeners
@@ -118,6 +117,34 @@ function setupEventListeners() {
     });
 }
 
+// Configurar botões de copiar
+function setupCopyButtons() {
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('copy-btn')) {
+            const value = e.target.getAttribute('data-value');
+            copyToClipboard(value, e.target);
+        }
+    });
+}
+
+// Função para copiar para a área de transferência
+function copyToClipboard(text, button) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Feedback visual
+        const originalText = button.textContent;
+        button.textContent = '✓ Copiado!';
+        button.style.background = '#00C853';
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.style.background = '';
+        }, 2000);
+    }).catch(err => {
+        console.error('Erro ao copiar:', err);
+        alert('Erro ao copiar. Tente novamente.');
+    });
+}
+
 // Verificar se o usuário está autenticado
 function checkAuth() {
     const token = localStorage.getItem('discord_token');
@@ -128,12 +155,10 @@ function checkAuth() {
         user = JSON.parse(userData);
         if (rolesData) userRoles = JSON.parse(rolesData);
         
-        // Verificar se o usuário é membro do servidor
         if (userRoles.length > 0) {
             updateUIAfterLogin();
             loadDrops();
         } else {
-            // Se não tem cargos, forçar novo login
             logout();
             showError("Você precisa ser membro do servidor para acessar os drops.");
         }
@@ -161,11 +186,9 @@ function processHash() {
     if (accessToken) {
         localStorage.setItem('discord_token', accessToken);
         getUserInfo(accessToken);
-        
-        // Limpar a hash da URL
         window.history.replaceState({}, document.title, window.location.pathname);
     }
-                  }
+}
 
 // Obter informações do usuário
 async function getUserInfo(token) {
@@ -179,8 +202,6 @@ async function getUserInfo(token) {
         if (response.ok) {
             user = await response.json();
             localStorage.setItem('discord_user', JSON.stringify(user));
-            
-            // Verificar cargos do usuário no servidor
             await checkUserRoles(token);
         } else {
             throw new Error('Falha ao obter informações do usuário');
@@ -195,7 +216,6 @@ async function getUserInfo(token) {
 // Verificar cargos do usuário no servidor
 async function checkUserRoles(token) {
     try {
-        // Primeiro, verificar se o usuário está no servidor
         const guildsResponse = await fetch('https://discord.com/api/users/@me/guilds', {
             headers: {
                 Authorization: `Bearer ${token}`
@@ -212,8 +232,6 @@ async function checkUserRoles(token) {
                 return;
             }
             
-            // Em uma implementação real, você precisaria de um backend para verificar os cargos
-            // Aqui estamos simulando a verificação com dados mockados
             simulateRoleCheck();
         } else {
             throw new Error('Falha ao verificar servidores');
@@ -225,12 +243,9 @@ async function checkUserRoles(token) {
     }
 }
 
-// Simular verificação de cargos (substituir por verificação real com backend)
+// Simular verificação de cargos
 function simulateRoleCheck() {
-    // Simular uma resposta com base no ID do usuário
     const userId = user.id;
-    
-    // Usuários com ID terminando em número par são VIPs, ímpares são membros comuns
     const lastDigit = parseInt(userId[userId.length - 1]);
     
     if (lastDigit % 2 === 0) {
@@ -239,7 +254,6 @@ function simulateRoleCheck() {
         userRoles = [MEMBER_ROLE_ID];
     }
     
-    // 10% de chance de ser owner (para teste)
     if (Math.random() < 0.1) {
         userRoles.push(OWNER_ROLE_ID);
     }
@@ -278,9 +292,7 @@ function showError(message) {
 
 // Carregar drops
 function loadDrops() {
-    // Em uma implementação real, isso viria de uma API
-    // Aqui estamos usando dados de exemplo
-    drops = sampleDrops;
+    drops = sampleRobloxAccounts;
     renderDrops();
 }
 
@@ -288,13 +300,11 @@ function loadDrops() {
 function renderDrops() {
     clearDrops();
     
-    // Verificar se o usuário tem permissão para ver drops
     if (!user || userRoles.length === 0) {
         showNoAccessMessage();
         return;
     }
     
-    // Filtrar drops com base nos cargos do usuário
     const canSeeVip = userRoles.includes(VIP_ROLE_ID) || userRoles.includes(OWNER_ROLE_ID);
     const isOwner = userRoles.includes(OWNER_ROLE_ID);
     
@@ -307,32 +317,53 @@ function renderDrops() {
         return;
     }
     
-    // Renderizar cada drop
     filteredDrops.forEach(drop => {
-        const dropElement = createDropElement(drop, isOwner);
+        const dropElement = createRobloxAccountElement(drop, isOwner);
         dropsGrid.appendChild(dropElement);
     });
 }
 
-// Criar elemento de card para um drop
-function createDropElement(drop, isOwner) {
+// Criar elemento de card para conta Roblox
+function createRobloxAccountElement(account, isOwner) {
     const card = document.createElement('div');
     card.className = 'drop-card';
-    card.dataset.id = drop.id;
+    card.dataset.id = account.id;
     
-    // Verificar se é VIP apenas
-    const isVipOnly = drop.isVip;
+    const isVipOnly = account.isVip;
     
     card.innerHTML = `
-        ${isVipOnly ? '<div class="vip-badge">VIP</div>' : '<div class="drop-badge">NOVO</div>'}
-        <img src="${drop.imageUrl}" alt="${drop.title}" class="drop-image">
+        ${isVipOnly ? '<div class="vip-badge">VIP</div>' : '<div class="drop-badge">ROBLOX</div>'}
+        <img src="${account.imageUrl}" alt="${account.username}" class="drop-image">
         <div class="drop-content">
-            <h3 class="drop-title">${drop.title}</h3>
-            <div class="drop-price">${drop.price}</div>
+            <h3 class="drop-title">${account.username}</h3>
+            <div class="drop-price">${account.robux} Robux • ${account.age}</div>
+            
             <ul class="drop-features">
-                ${drop.features.map(feature => `<li>${feature}</li>`).join('')}
+                ${account.features.map(feature => `<li>${feature}</li>`).join('')}
             </ul>
-            <p class="drop-description">${drop.description}</p>
+            
+            <div class="account-credentials">
+                <div class="credential-item">
+                    <span>Usuário: </span>
+                    <span class="credential-value">${account.username}</span>
+                    <button class="copy-btn" data-value="${account.username}">Copiar</button>
+                </div>
+                
+                <div class="credential-item">
+                    <span>Senha: </span>
+                    <span class="credential-value">••••••••</span>
+                    <button class="copy-btn" data-value="${account.password}">Copiar</button>
+                </div>
+                
+                <div class="credential-item">
+                    <span>Cookie: </span>
+                    <span class="credential-value">••••••••</span>
+                    <button class="copy-btn" data-value="${account.cookie}">Copiar</button>
+                </div>
+            </div>
+            
+            <p class="drop-description">${account.description}</p>
+            
             <div class="drop-footer">
                 <button class="claim-btn">Resgatar Agora</button>
                 ${isOwner ? '<button class="delete-btn">🗑️</button>' : ''}
@@ -340,18 +371,16 @@ function createDropElement(drop, isOwner) {
         </div>
     `;
     
-    // Adicionar evento de clique no botão de resgatar
     const claimBtn = card.querySelector('.claim-btn');
     claimBtn.addEventListener('click', () => {
-        alert(`Você está resgatando: ${drop.title}\n${drop.price}`);
+        alert(`Você está resgatando a conta: ${account.username}\n${account.robux} Robux`);
     });
     
-    // Adicionar evento de clique no botão de deletar (apenas para owners)
     if (isOwner) {
         const deleteBtn = card.querySelector('.delete-btn');
         deleteBtn.addEventListener('click', () => {
-            if (confirm(`Tem certeza que deseja deletar o drop "${drop.title}"?`)) {
-                deleteDrop(drop.id);
+            if (confirm(`Tem certeza que deseja deletar a conta "${account.username}"?`)) {
+                deleteDrop(account.id);
             }
         });
     }
@@ -359,7 +388,7 @@ function createDropElement(drop, isOwner) {
     return card;
 }
 
-// Deletar drop (apenas para owners)
+// Deletar drop
 function deleteDrop(dropId) {
     drops = drops.filter(drop => drop.id !== dropId);
     renderDrops();
@@ -380,7 +409,6 @@ function showNoAccessMessage() {
         </div>
     `;
     
-    // Adicionar evento de clique no botão de login
     const loginBtn = dropsGrid.querySelector('.login-btn');
     loginBtn.addEventListener('click', () => {
         loginModal.style.display = 'flex';
@@ -391,11 +419,11 @@ function showNoAccessMessage() {
 function showNoDropsMessage() {
     dropsGrid.innerHTML = `
         <div class="no-drops">
-            <h3>Nenhum drop disponível no momento</h3>
+            <h3>Nenhuma conta disponível no momento</h3>
             <p>Volte mais tarde para ver novidades!</p>
         </div>
     `;
 }
 
-// Processar hash na carga inicial (para OAuth2)
+// Processar hash na carga inicial
 processHash();
