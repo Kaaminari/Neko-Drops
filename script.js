@@ -17,6 +17,8 @@ const modalLoginBtn = document.getElementById('modal-login-btn');
 const errorModal = document.getElementById('error-modal');
 const errorMessage = document.getElementById('error-message');
 const errorCloseBtn = document.getElementById('error-close-btn');
+// URL do seu backend no Deno Deploy - SUBSTITUA pela sua URL!
+const BACKEND_URL = 'https://seu-projeto.deno.dev';
 
 // Estado da aplicação
 let user = null;
@@ -299,24 +301,48 @@ async function checkUserRoles(token) {
     }
 }
 
-// Simular verificação de cargos
-function simulateRoleCheck() {
-    const userId = user.id;
-    const lastDigit = parseInt(userId[userId.length - 1]);
-    
-    if (lastDigit % 2 === 0) {
-        userRoles = [MEMBER_ROLE_ID, VIP_ROLE_ID];
-    } else {
-        userRoles = [MEMBER_ROLE_ID];
+// Verificar cargos do usuário no servidor (AGORA COM BACKEND REAL)
+async function checkUserRoles(token) {
+    try {
+        console.log('🔍 Verificando cargos com backend...');
+        
+        const response = await fetch(`${BACKEND_URL}/api/user-roles`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('✅ Resposta do backend:', data);
+            
+            if (!data.canAccess) {
+                showError("Você precisa ser membro do servidor para acessar os drops.");
+                logout();
+                return;
+            }
+            
+            // Converter para o formato que seu frontend espera
+            userRoles = data.roles;
+            user.isVip = data.isVip;
+            user.isMember = data.isMember;
+            
+            localStorage.setItem('discord_roles', JSON.stringify(userRoles));
+            updateUIAfterLogin();
+            loadDrops();
+            
+        } else if (response.status === 403) {
+            showError("Você precisa ser membro do servidor para acessar os drops.");
+            logout();
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Falha ao verificar cargos');
+        }
+    } catch (error) {
+        console.error('❌ Erro ao verificar cargos:', error);
+        showError("Erro ao verificar permissões: " + error.message);
+        logout();
     }
-    
-    if (Math.random() < 0.1) {
-        userRoles.push(OWNER_ROLE_ID);
-    }
-    
-    localStorage.setItem('discord_roles', JSON.stringify(userRoles));
-    updateUIAfterLogin();
-    loadDrops();
 }
 
 // Atualizar UI após login
