@@ -1,5 +1,5 @@
 // Configurações
-const CLIENT_ID = "SEU_CLIENT_ID_AQUI"; // Substitua pelo Client ID do seu app Discord
+const CLIENT_ID = "1410654667490197641"; // Substitua pelo Client ID do seu app Discord
 const REDIRECT_URI = window.location.origin;
 const SERVER_ID = "1399661543284805763";
 const MEMBER_ROLE_ID = "1399662113114296360";
@@ -151,6 +151,12 @@ function processHash() {
     const hash = window.location.hash.substring(1);
     const params = new URLSearchParams(hash);
     const accessToken = params.get('access_token');
+    const error = params.get('error');
+    
+    if (error) {
+        showError("Erro ao fazer login: " + error);
+        return;
+    }
     
     if (accessToken) {
         localStorage.setItem('discord_token', accessToken);
@@ -159,7 +165,7 @@ function processHash() {
         // Limpar a hash da URL
         window.history.replaceState({}, document.title, window.location.pathname);
     }
-}
+                  }
 
 // Obter informações do usuário
 async function getUserInfo(token) {
