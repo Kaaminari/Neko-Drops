@@ -61,7 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCopyButtons();
 });
 
-// Configurar event listeners
 function setupEventListeners() {
     // Login com Discord
     loginBtn.addEventListener('click', () => {
@@ -78,6 +77,12 @@ function setupEventListeners() {
         loginWithDiscord();
     });
 
+    // Error modal close button
+    errorCloseBtn.addEventListener('click', () => {
+        loginModal.style.display = 'none';
+        errorModal.style.display = 'none';
+    });
+
     // Fechar modal ao clicar fora
     loginModal.addEventListener('click', (e) => {
         if (e.target === loginModal) {
@@ -85,14 +90,16 @@ function setupEventListeners() {
         }
     });
 
-    // Error modal close button
-    errorCloseBtn.addEventListener('click', () => {
-        errorModal.style.display = 'none';
-    });
-
-    // Fechar error modal ao clicar fora
     errorModal.addEventListener('click', (e) => {
         if (e.target === errorModal) {
+            errorModal.style.display = 'none';
+        }
+    });
+
+    // Fechar modal com tecla ESC
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            loginModal.style.display = 'none';
             errorModal.style.display = 'none';
         }
     });
