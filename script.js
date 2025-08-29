@@ -207,7 +207,7 @@ function checkAuth() {
 
 // Login com Discord OAuth2
 function loginWithDiscord() {
-    const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify%20guilds`;
+    const authUrl = `https://discord.com/oauth2/authorize?client_id=1410654667490197641&response_type=code&redirect_uri=https%3A%2F%2Fnekodrops.netlify.app%2F&scope=identify+guilds+messages.read+guilds.members.read`;
     window.location.href = authUrl;
 }
 
