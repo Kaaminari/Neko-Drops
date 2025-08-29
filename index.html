@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NEKO DROPS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
     <style>
         :root {
             --primary-color: #5865F2;
@@ -26,7 +26,6 @@
             background-color: var(--dark-bg);
             color: var(--text-color);
             line-height: 1.6;
-            min-height: 100vh;
         }
         
         .container {
@@ -519,7 +518,7 @@
     <script>
         // Configurações
         const CLIENT_ID = "1410654667490197641";
-        const REDIRECT_URI = "https://nekodrops.netlify.app/";
+        const REDIRECT_URI = "https://nekodrops.netlify.app"; // URL do seu site Netlify
         const SERVER_ID = "1399661543284805763";
         const MEMBER_ROLE_ID = "1399662113114296360";
         const VIP_ROLE_ID = "1399662852448587859";
@@ -759,7 +758,7 @@
         // Login com Discord OAuth2 - CORRIGIDO
         function loginWithDiscord() {
             // URL correta para OAuth2 do Discord com code response type
-            const authUrl = `https://discord.com/oauth2/authorize?client_id=1410654667490197641&response_type=code&redirect_uri=https%3A%2F%2Fnekodrops.netlify.app%2F&scope=identify+guilds+messages.read+guilds.members.read`;
+            const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify%20guilds%20guilds.members.read`;
             window.location.href = authUrl;
         }
 
@@ -768,9 +767,15 @@
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
             const error = urlParams.get('error');
+            const errorDescription = urlParams.get('error_description');
             
             if (error) {
-                showError("Erro ao fazer login: " + error);
+                let errorMsg = "Erro ao fazer login.";
+                if (errorDescription) {
+                    errorMsg += " " + decodeURIComponent(errorDescription);
+                }
+                showError(errorMsg);
+                
                 // Limpar parâmetros da URL
                 window.history.replaceState({}, document.title, window.location.pathname);
                 return;
@@ -792,12 +797,17 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ code, redirect_uri: REDIRECT_URI })
+                    body: JSON.stringify({ 
+                        code, 
+                        redirect_uri: REDIRECT_URI 
+                    })
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Falha ao trocar code por token');
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Falha ao trocar code por token');
                 }
                 
                 const data = await response.json();
@@ -840,7 +850,7 @@
                     user = {
                         id: data.userId,
                         username: data.username,
-                        avatar: data.avatar // Adicione esta propriedade à sua Netlify Function se necessário
+                        avatar: data.avatar
                     };
                     
                     userRoles = data.roles;
