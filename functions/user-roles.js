@@ -2,11 +2,12 @@
 const fetch = require('node-fetch');
 
 exports.handler = async (event, context) => {
-  // Configurar CORS
+  // Configurar CORS - MELHORADO
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS'
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-netlify-headers',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true'
   };
 
   // Responder a preflight requests
@@ -81,6 +82,7 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
+    console.error('Erro na função user-roles:', error);
     return {
       statusCode: 500,
       headers,
