@@ -6,6 +6,9 @@ const MEMBER_ROLE_ID = "1399662113114296360";
 const VIP_ROLE_ID = "1399662852448587859";
 const OWNER_ROLE_ID = "1399664650638856303";
 
+// URL do backend - AGORA NO NETLIFY FUNCTIONS
+const BACKEND_URL = '/.netlify/functions';
+
 // Elementos DOM
 const loginBtn = document.getElementById('login-btn');
 const userInfo = document.getElementById('user-info');
@@ -17,8 +20,6 @@ const modalLoginBtn = document.getElementById('modal-login-btn');
 const errorModal = document.getElementById('error-modal');
 const errorMessage = document.getElementById('error-message');
 const errorCloseBtn = document.getElementById('error-close-btn');
-// URL do seu backend no Deno Deploy - SUBSTITUA pela sua URL!
-const BACKEND_URL = 'https://nekodrops-backend.deno.dev';
 
 // Estado da aplicação
 let user = null;
@@ -49,29 +50,6 @@ const sampleRobloxAccounts = [
         imageUrl: "https://via.placeholder.com/300x160/5865F2/FFFFFF?text=Roblox+Account",
         isVip: false,
         createdAt: "2023-11-15T10:30:00Z"
-    },
-    {
-        id: 2,
-        messageId: "987654321",
-        username: "PremiumUser",
-        password: "PremiumPass123",
-        ip: "192.168.1.1",
-        robux: "2500",
-        premium: true,
-        cookie: "COOKIE_PREMIUM_AQUI",
-        age: "500 Dias",
-        status: "Verified",
-        description: "Conta Roblox Premium com 2500 Robux. Perfeita para jogadores experientes.",
-        features: [
-            "Idade: 500 Dias",
-            "Status: Verificado",
-            "Robux: 2500",
-            "Premium: Sim",
-            "Itens exclusivos"
-        ],
-        imageUrl: "https://via.placeholder.com/300x160/00C853/FFFFFF?text=Premium+Account",
-        isVip: true,
-        createdAt: "2023-11-14T15:45:00Z"
     }
 ];
 
@@ -79,6 +57,7 @@ const sampleRobloxAccounts = [
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     setupEventListeners();
+    setupFilters();
     setupCopyButtons();
 });
 
@@ -129,7 +108,7 @@ function setupCopyButtons() {
     });
 }
 
-// Adicionar esta função para configurar os filtros
+// Configurar filtros
 function setupFilters() {
     const filterBtns = document.querySelectorAll('.filter-btn');
     
@@ -142,48 +121,6 @@ function setupFilters() {
         });
     });
 }
-
-// Modificar a função renderDrops para aceitar filtro
-function renderDrops(filter = 'all') {
-    clearDrops();
-    
-    if (!user || userRoles.length === 0) {
-        showNoAccessMessage();
-        return;
-    }
-    
-    const canSeeVip = userRoles.includes(VIP_ROLE_ID) || userRoles.includes(OWNER_ROLE_ID);
-    const isOwner = userRoles.includes(OWNER_ROLE_ID);
-    
-    let filteredDrops = drops;
-    
-    if (filter === 'normal') {
-        filteredDrops = drops.filter(drop => !drop.isVip);
-    } else if (filter === 'vip') {
-        filteredDrops = drops.filter(drop => drop.isVip);
-        if (!canSeeVip) {
-            filteredDrops = [];
-        }
-    }
-    
-    if (filteredDrops.length === 0) {
-        showNoDropsMessage();
-        return;
-    }
-    
-    filteredDrops.forEach(drop => {
-        const dropElement = createRobloxAccountElement(drop, isOwner);
-        dropsGrid.appendChild(dropElement);
-    });
-}
-
-// Não se esqueça de chamar setupFilters() no DOMContentLoaded
-document.addEventListener('DOMContentLoaded', () => {
-    checkAuth();
-    setupEventListeners();
-    setupFilters(); // ← Adicionar esta linha
-    setupCopyButtons();
-});
 
 // Função para copiar para a área de transferência
 function copyToClipboard(text, button) {
@@ -271,42 +208,10 @@ async function getUserInfo(token) {
     }
 }
 
-// Verificar cargos do usuário no servidor
+// Verificar cargos do usuário no servidor (AGORA COM NETLIFY FUNCTIONS)
 async function checkUserRoles(token) {
     try {
-        const guildsResponse = await fetch('https://discord.com/api/users/@me/guilds', {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-        
-        if (guildsResponse.ok) {
-            const guilds = await guildsResponse.json();
-            const isInServer = guilds.some(guild => guild.id === SERVER_ID);
-            
-            if (!isInServer) {
-                showError("Você precisa ser membro do servidor para acessar os drops.");
-                logout();
-                return;
-            }
-            
-            simulateRoleCheck();
-        } else {
-            throw new Error('Falha ao verificar servidores');
-        }
-    } catch (error) {
-        console.error('Erro ao verificar cargos:', error);
-        showError("Erro ao verificar permissões. Tente novamente.");
-        logout();
-    }
-}
-
-// Verificar cargos do usuário no servidor (AGORA COM BACKEND REAL)
-async function checkUserRoles(token) {
-    try {
-        console.log('🔍 Verificando cargos com backend...');
-        
-        const response = await fetch(`${BACKEND_URL}/api/user-roles`, {
+        const response = await fetch(`${BACKEND_URL}/user-roles`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -314,7 +219,6 @@ async function checkUserRoles(token) {
         
         if (response.ok) {
             const data = await response.json();
-            console.log('✅ Resposta do backend:', data);
             
             if (!data.canAccess) {
                 showError("Você precisa ser membro do servidor para acessar os drops.");
@@ -322,7 +226,6 @@ async function checkUserRoles(token) {
                 return;
             }
             
-            // Converter para o formato que seu frontend espera
             userRoles = data.roles;
             user.isVip = data.isVip;
             user.isMember = data.isMember;
@@ -335,12 +238,11 @@ async function checkUserRoles(token) {
             showError("Você precisa ser membro do servidor para acessar os drops.");
             logout();
         } else {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Falha ao verificar cargos');
+            throw new Error('Falha ao verificar cargos');
         }
     } catch (error) {
-        console.error('❌ Erro ao verificar cargos:', error);
-        showError("Erro ao verificar permissões: " + error.message);
+        console.error('Erro ao verificar cargos:', error);
+        showError("Erro ao verificar permissões. Tente novamente.");
         logout();
     }
 }
@@ -379,7 +281,7 @@ function loadDrops() {
 }
 
 // Renderizar drops
-function renderDrops() {
+function renderDrops(filter = 'all') {
     clearDrops();
     
     if (!user || userRoles.length === 0) {
@@ -390,9 +292,16 @@ function renderDrops() {
     const canSeeVip = userRoles.includes(VIP_ROLE_ID) || userRoles.includes(OWNER_ROLE_ID);
     const isOwner = userRoles.includes(OWNER_ROLE_ID);
     
-    const filteredDrops = drops.filter(drop => {
-        return !drop.isVip || canSeeVip;
-    });
+    let filteredDrops = drops;
+    
+    if (filter === 'normal') {
+        filteredDrops = drops.filter(drop => !drop.isVip);
+    } else if (filter === 'vip') {
+        filteredDrops = drops.filter(drop => drop.isVip);
+        if (!canSeeVip) {
+            filteredDrops = [];
+        }
+    }
     
     if (filteredDrops.length === 0) {
         showNoDropsMessage();
