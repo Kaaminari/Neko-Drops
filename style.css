@@ -486,3 +486,96 @@ header {
         font-size: 20px;
     }
 }
+/* Estilos para mobile */
+.mobile-menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: white;
+    cursor: pointer;
+    padding: 10px;
+}
+
+@media (max-width: 768px) {
+    .mobile-menu-btn {
+        display: block;
+    }
+    
+    .filters {
+        flex-direction: column;
+        position: absolute;
+        top: 70px;
+        right: 10px;
+        background: #2c2f33;
+        border-radius: 8px;
+        padding: 10px;
+        z-index: 100;
+        display: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .filters.active {
+        display: flex;
+    }
+    
+    .filters .filter-btn {
+        margin: 5px 0;
+        width: 100%;
+    }
+    
+    .drop-card {
+        width: 100%;
+        margin: 10px 0;
+    }
+    
+    .modal-content {
+        width: 90%;
+        margin: 10% auto;
+    }
+    
+    .account-credentials {
+        flex-direction: column;
+    }
+    
+    .credential-item {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 10px;
+    }
+    
+    .credential-item .copy-btn {
+        margin-top: 5px;
+        width: 100%;
+    }
+
+/* Melhorias de usabilidade para mobile */
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+    
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .auth-section {
+        margin-top: 15px;
+        width: 100%;
+    }
+    
+    .login-btn {
+        width: 100%;
+    }
+    
+    .user-info {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .user-avatar {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+}
