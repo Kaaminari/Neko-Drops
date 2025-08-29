@@ -1,6 +1,6 @@
 // Configurações
 const CLIENT_ID = "1410654667490197641";
-const REDIRECT_URI = window.location.origin;
+const REDIRECT_URI = "https://nekodrops.netlify.app/";
 const SERVER_ID = "1399661543284805763";
 const MEMBER_ROLE_ID = "1399662113114296360";
 const VIP_ROLE_ID = "1399662852448587859";
