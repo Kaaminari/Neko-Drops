@@ -16,10 +16,10 @@ const userAvatar = document.getElementById('user-avatar');
 const username = document.getElementById('username');
 const dropsGrid = document.getElementById('drops-grid');
 const loginModal = document.getElementById('login-modal');
-const modalLoginBtn = document.getElementById('modal-login-btn');
 const errorModal = document.getElementById('error-modal');
 const errorMessage = document.getElementById('error-message');
 const errorCloseBtn = document.getElementById('error-close-btn');
+const modalLoginBtn = document.getElementById('modal-login-btn');
 
 // Estado da aplicação
 let user = null;
@@ -59,50 +59,85 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     setupFilters();
     setupCopyButtons();
+    setupModalClosing();
+    if (isMobileDevice()) {
+        setupMobileMenu();
+    }
 });
 
 function setupEventListeners() {
     // Login com Discord
-    loginBtn.addEventListener('click', () => {
-        if (user) {
-            logout();
-        } else {
-            loginModal.style.display = 'flex';
-        }
-    });
+    if (loginBtn) {
+        loginBtn.addEventListener('click', () => {
+            if (user) {
+                logout();
+            } else {
+                loginModal.style.display = 'flex';
+            }
+        });
+    }
 
     // Modal login button
-    modalLoginBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        loginWithDiscord();
-    });
+    if (modalLoginBtn) {
+        modalLoginBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginWithDiscord();
+        });
+    }
+}
 
-    // Error modal close button
-    errorCloseBtn.addEventListener('click', () => {
-        loginModal.style.display = 'none';
-        errorModal.style.display = 'none';
-    });
-
-    // Fechar modal ao clicar fora
-    loginModal.addEventListener('click', (e) => {
+// Configurar fechamento de modais
+function setupModalClosing() {
+    // Fechar modais ao clicar fora
+    document.addEventListener('click', (e) => {
         if (e.target === loginModal) {
             loginModal.style.display = 'none';
         }
-    });
-
-    errorModal.addEventListener('click', (e) => {
         if (e.target === errorModal) {
             errorModal.style.display = 'none';
         }
     });
 
-    // Fechar modal com tecla ESC
+    // Fechar modais com tecla ESC
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             loginModal.style.display = 'none';
             errorModal.style.display = 'none';
         }
     });
+
+    // Botão de fechar no modal de erro
+    if (errorCloseBtn) {
+        errorCloseBtn.addEventListener('click', () => {
+            errorModal.style.display = 'none';
+        });
+    }
+}
+
+// Melhorias para mobile
+function setupMobileMenu() {
+    // Criar botão de menu para mobile
+    const menuBtn = document.createElement('button');
+    menuBtn.innerHTML = '☰';
+    menuBtn.className = 'mobile-menu-btn';
+    document.querySelector('header').appendChild(menuBtn);
+    
+    // Toggle do menu de filtros em mobile
+    menuBtn.addEventListener('click', () => {
+        document.querySelector('.filters').classList.toggle('active');
+    });
+    
+    // Fechar menu ao clicar fora
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.filters') && !e.target.closest('.mobile-menu-btn')) {
+            document.querySelector('.filters').classList.remove('active');
+        }
+    });
+}
+
+// Verificar se é dispositivo móvel
+function isMobileDevice() {
+    return window.innerWidth <= 768;
 }
 
 // Configurar botões de copiar
@@ -161,9 +196,12 @@ function checkAuth() {
             updateUIAfterLogin();
             loadDrops();
         } else {
-            logout();
-            showError("Você precisa ser membro do servidor para acessar os drops.");
+            // Tentar obter as roles novamente
+            checkUserRoles(token);
         }
+    } else {
+        // Verificar se há token no hash (após redirecionamento)
+        processHash();
     }
 }
 
@@ -173,19 +211,23 @@ function loginWithDiscord() {
     window.location.href = authUrl;
 }
 
-// Processar token de acesso após redirecionamento
+// Processar token de acesso após redirecionamento - CORRIGIDO
 function processHash() {
-    const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get('access_token');
-    const error = params.get('error');
+    const hash = window.location.hash;
+    if (!hash) return;
     
-    if (error) {
-        showError("Erro ao fazer login: " + error);
+    // Verificar se temos um token de acesso no hash
+    const tokenMatch = hash.match(/access_token=([^&]+)/);
+    const errorMatch = hash.match(/error=([^&]+)/);
+    
+    if (errorMatch) {
+        showError("Erro ao fazer login: " + decodeURIComponent(errorMatch[1]));
+        window.history.replaceState({}, document.title, window.location.pathname);
         return;
     }
     
-    if (accessToken) {
+    if (tokenMatch) {
+        const accessToken = decodeURIComponent(tokenMatch[1]);
         localStorage.setItem('discord_token', accessToken);
         getUserInfo(accessToken);
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -257,7 +299,9 @@ async function checkUserRoles(token) {
 // Atualizar UI após login
 function updateUIAfterLogin() {
     loginBtn.textContent = 'Sair';
-    userAvatar.src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`;
+    if (user.avatar) {
+        userAvatar.src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`;
+    }
     username.textContent = user.username;
     userInfo.classList.remove('hidden');
     loginModal.style.display = 'none';
@@ -277,8 +321,12 @@ function logout() {
 
 // Mostrar erro
 function showError(message) {
-    errorMessage.textContent = message;
-    errorModal.style.display = 'flex';
+    if (errorMessage) {
+        errorMessage.textContent = message;
+    }
+    if (errorModal) {
+        errorModal.style.display = 'flex';
+    }
 }
 
 // Carregar drops
@@ -311,7 +359,7 @@ function renderDrops(filter = 'all') {
     }
     
     if (filteredDrops.length === 0) {
-        showNoDropsMessage();
+        showNoDropsMessage(filter);
         return;
     }
     
@@ -409,16 +457,25 @@ function showNoAccessMessage() {
     
     const loginBtn = dropsGrid.querySelector('.login-btn');
     loginBtn.addEventListener('click', () => {
-        loginModal.style.display = 'flex';
+        if (loginModal) {
+            loginModal.style.display = 'flex';
+        }
     });
 }
 
 // Mostrar mensagem quando não há drops
-function showNoDropsMessage() {
+function showNoDropsMessage(filter = 'all') {
+    let message = '';
+    if (filter === 'vip') {
+        message = '<p>Você precisa ser VIP para visualizar as contas VIP.</p>';
+    } else {
+        message = '<p>Volte mais tarde para ver novidades!</p>';
+    }
+    
     dropsGrid.innerHTML = `
         <div class="no-drops">
             <h3>Nenhuma conta disponível no momento</h3>
-            <p>Volte mais tarde para ver novidades!</p>
+            ${message}
         </div>
     `;
 }
