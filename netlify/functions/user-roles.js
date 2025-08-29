@@ -1,22 +1,22 @@
-// netlify/functions/user-roles/user-roles.js
 const fetch = require('node-fetch');
 
 exports.handler = async (event, context) => {
-  // Configurar CORS
+  // CORS CORRIGIDO
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS'
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-netlify-headers',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true'
   };
 
-  // Responder a preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }
 
   try {
-    const authHeader = event.headers.authorization;
+    console.log('🔍 Iniciando verificação de user-roles...');
     
+    const authHeader = event.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return {
         statusCode: 401,
@@ -26,13 +26,15 @@ exports.handler = async (event, context) => {
     }
 
     const userToken = authHeader.replace('Bearer ', '');
-    
+    console.log('🔑 Token do usuário recebido');
+
     // Verificar usuário no Discord
     const userResponse = await fetch('https://discord.com/api/users/@me', {
       headers: { Authorization: `Bearer ${userToken}` }
     });
 
     if (!userResponse.ok) {
+      console.log('❌ Token de usuário inválido');
       return {
         statusCode: 401,
         headers,
@@ -41,18 +43,34 @@ exports.handler = async (event, context) => {
     }
 
     const userData = await userResponse.json();
+    console.log('👤 Usuário:', userData.username);
     
+    // VERIFICAÇÃO CRÍTICA - VARIÁVEL CORRETA
+    const botToken = process.env.DISCORD_BOT_TOKEN; // ← CORRIGIDO
+    if (!botToken) {
+      console.log('❌ FALTA: DISCORD_BOT_TOKEN no environment');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'Erro de configuração do servidor' })
+      };
+    }
+
     // Verificar cargos no servidor
+    console.log('🛡️ Usando bot token para verificar cargos...');
     const memberResponse = await fetch(
       `https://discord.com/api/guilds/${process.env.SERVER_ID}/members/${userData.id}`,
       { 
         headers: { 
-          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` 
+          Authorization: `Bot ${botToken}` // ← VARIÁVEL CORRIGIDA
         } 
       }
     );
 
+    console.log('📊 Status da resposta do servidor:', memberResponse.status);
+    
     if (!memberResponse.ok) {
+      console.log('❌ Usuário não está no servidor');
       return {
         statusCode: 403,
         headers,
@@ -63,8 +81,12 @@ exports.handler = async (event, context) => {
     const memberData = await memberResponse.json();
     const userRoles = memberData.roles || [];
     
+    console.log('🎯 Cargos do usuário:', userRoles);
+    
     const isMember = userRoles.includes(process.env.MEMBER_ROLE_ID);
     const isVip = userRoles.includes(process.env.VIP_ROLE_ID);
+    
+    console.log('✅ Login bem-sucedido para:', userData.username);
     
     return {
       statusCode: 200,
@@ -82,7 +104,7 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('Erro na função user-roles:', error);
+    console.error('💥 Erro na função user-roles:', error);
     return {
       statusCode: 500,
       headers,
